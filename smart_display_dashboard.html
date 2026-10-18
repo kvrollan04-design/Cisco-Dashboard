@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desk Mini Smart Display</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons for clean Apple-like icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google API & Identity Services -->
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4facfe 100%);
+            background-size: 200% 200%;
+            animation: gradientBG 15s ease infinite;
+            color: white;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* Custom scrollbar for events list */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Smooth scrolling for anchor links if needed, snap mandatory */
+        #swipe-container {
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+</head>
+<body class="box-border m-0 p-0 overflow-hidden text-white relative">
+
+    <!-- Pagination Dots -->
+    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 flex gap-3 z-50 pointer-events-none">
+        <div id="dot-0" class="w-2.5 h-2.5 rounded-full bg-white transition-all duration-300"></div>
+        <div id="dot-1" class="w-2.5 h-2.5 rounded-full bg-white/30 transition-all duration-300"></div>
+    </div>
+
+    <!-- Swipe Container -->
+    <div id="swipe-container" class="w-screen h-screen flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+        
+        <!-- Page 1: Main Dashboard -->
+        <div class="w-screen h-screen flex-shrink-0 snap-center flex items-center justify-center p-8 pb-20">
+            <div class="w-full max-w-7xl h-full grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
+                
+                <!-- Top Left: Time & Date (Spans 2 columns) -->
+            </div>
+            <div class="flex-grow flex flex-col justify-center">
+                <h2 id="temperature" class="text-6xl font-bold mb-2">--°</h2>
+                <p id="weather-desc" class="text-xl font-medium text-white/90 capitalize">Loading...</p>
+            </div>
+            <div class="w-full grid grid-cols-2 gap-4 mt-6 text-sm text-white/80 border-t border-white/20 pt-4">
+                <div class="flex flex-col">
+                    <span class="text-xs text-white/50 mb-1">Humidity</span>
+                    <span id="humidity" class="font-medium">--%</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-xs text-white/50 mb-1">Wind</span>
+                    <span id="wind" class="font-medium">-- km/h</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Left: Calendar/Events -->
+        <div class="glass rounded-[2rem] p-8 flex flex-col">
+            <div class="flex items-center justify-between mb-6 border-b border-white/20 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-300">
+                        <i class="ph ph-calendar-blank text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold tracking-wide">Up Next</h3>
+                </div>
+                <button id="auth-button" class="text-xs bg-white/10 hover:bg-white/20 transition-colors px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1 invisible">
+                    <i class="ph ph-google-logo"></i> Sign In
+                </button>
+            </div>
+            
+            <div id="events-container" class="flex-grow overflow-y-auto no-scrollbar flex flex-col gap-4">
+                <div class="text-center text-white/60 text-sm mt-8 flex flex-col items-center gap-2">
+                    <i class="ph ph-calendar-x text-3xl mb-1"></i>
+                    <p>Sign in to view your calendar</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Right: Music/Spotify Player (Spans 2 columns) -->
+        <div class="glass rounded-[2rem] p-6 flex flex-col justify-center md:col-span-2 relative overflow-hidden">
+            <!-- Blurred background art for depth -->
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=800&auto=format&fit=crop')] bg-cover bg-center opacity-30 blur-2xl z-0 pointer-events-none"></div>
+            
+            <div class="relative z-10 flex items-center gap-8 h-full">
+                <!-- Album Art -->
+                <div class="w-40 h-40 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 border border-white/10 group cursor-pointer relative">
+                     <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400&auto=format&fit=crop" alt="Album Art" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                     <div class="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                         <i class="ph-fill ph-spotify-logo text-white text-4xl drop-shadow-md"></i>
+                     </div>
+                </div>
+                
+                <!-- Track Info & Controls -->
+                <div class="flex-grow flex flex-col justify-center">
+                    <div class="mb-4">
+                        <p class="text-xs font-medium uppercase tracking-widest text-white/60 mb-1 flex items-center gap-1">
+                            <i class="ph-fill ph-speaker-high"></i> Desk Mini Audio
+                        </p>
+                        <h3 class="text-3xl font-bold mb-1 truncate drop-shadow-md">Midnight City</h3>
+                        <p class="text-lg text-white/80 font-light truncate">M83 • Hurry Up, We're Dreaming</p>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="w-full mb-4">
+                        <div class="w-full bg-white/20 rounded-full h-1.5 mb-2 cursor-pointer">
+                            <div class="bg-white rounded-full h-1.5 w-1/3 relative">
+                                <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-xs text-white/60 font-medium">
+                            <span>1:24</span>
+                            <span>4:03</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="flex items-center gap-6 text-white/90">
+                        <button class="hover:text-white transition-colors"><i class="ph-fill ph-shuffle text-xl"></i></button>
+                        <button class="hover:text-white transition-colors"><i class="ph-fill ph-skip-back text-3xl"></i></button>
+                        <button class="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform shadow-lg">
+                            <i class="ph-fill ph-pause text-2xl"></i>
+                        </button>
+                        <button class="hover:text-white transition-colors"><i class="ph-fill ph-skip-forward text-3xl"></i></button>
+                        <button class="hover:text-white transition-colors"><i class="ph-fill ph-repeat text-xl"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+            </div>
+        </div>
+
+        <!-- Page 2: Smart Home & Apps -->
+        <div class="w-screen h-screen flex-shrink-0 snap-center flex items-center justify-center p-8 pb-20">
+            <div class="w-full max-w-7xl h-full grid grid-cols-1 md:grid-cols-4 gap-6 auto-rows-fr">
+                
+                <!-- Smart Home Control (Spans 2 cols) -->
+                <div class="glass rounded-[2rem] p-8 flex flex-col md:col-span-2 relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-300">
+                                <i class="ph ph-house text-xl"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold tracking-wide">Home</h3>
+                        </div>
+                        <span class="text-sm font-medium text-white/60">3 Active</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 flex-grow">
+                        <!-- Living Room Lights -->
+                        <button class="bg-white/10 hover:bg-white/20 transition-colors rounded-2xl p-4 flex flex-col justify-between border border-white/10 text-left group">
+                            <div class="flex justify-between items-start w-full">
+                                <i class="ph-fill ph-lightbulb text-3xl text-yellow-300"></i>
+                                <div class="w-10 h-6 bg-green-500 rounded-full flex items-center p-1">
+                                    <div class="w-4 h-4 bg-white rounded-full shadow-sm translate-x-4"></div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="font-semibold text-lg">Living Room</p>
+                                <p class="text-sm text-white/60">Lights • 100%</p>
+                            </div>
+                        </button>
+                        
+                        <!-- AC Control -->
+                        <button class="bg-white/10 hover:bg-white/20 transition-colors rounded-2xl p-4 flex flex-col justify-between border border-white/10 text-left group">
+                            <div class="flex justify-between items-start w-full">
+                                <i class="ph-fill ph-thermometer text-3xl text-blue-300"></i>
+                                <div class="w-10 h-6 bg-green-500 rounded-full flex items-center p-1">
+                                    <div class="w-4 h-4 bg-white rounded-full shadow-sm translate-x-4"></div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="font-semibold text-lg">Air Con</p>
+                                <p class="text-sm text-white/60">Cooling • 22°C</p>
+                            </div>
+                        </button>
+                        
+                        <!-- Front Door -->
+                        <button class="bg-white/5 hover:bg-white/10 transition-colors rounded-2xl p-4 flex flex-col justify-between border border-white/5 text-left group opacity-80">
+                            <div class="flex justify-between items-start w-full">
+                                <i class="ph-fill ph-lock-key text-3xl text-white/50"></i>
+                                <div class="w-10 h-6 bg-white/20 rounded-full flex items-center p-1">
+                                    <div class="w-4 h-4 bg-white/50 rounded-full shadow-sm"></div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="font-semibold text-lg">Front Door</p>
+                                <p class="text-sm text-white/60">Locked</p>
+                            </div>
+                        </button>
+                        
+                        <!-- Add Device -->
+                        <button class="border-2 border-dashed border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2">
+                            <i class="ph ph-plus text-2xl text-white/50"></i>
+                            <p class="font-medium text-white/70">Add Device</p>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Notes / Reminders (Spans 2 cols) -->
+                <div class="glass rounded-[2rem] p-8 flex flex-col md:col-span-2 relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-300">
+                                <i class="ph ph-note-pencil text-xl"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold tracking-wide">Quick Notes</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-grow flex flex-col gap-3 overflow-y-auto no-scrollbar">
+                        <div class="bg-white/10 rounded-xl p-4 border border-white/10 flex gap-3 items-center">
+                            <div class="w-5 h-5 rounded-full border-2 border-white/30 flex-shrink-0"></div>
+                            <p class="text-white/90">Review Q3 presentation draft</p>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-4 border border-white/10 flex gap-3 items-center">
+                            <div class="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center flex-shrink-0">
+                                <i class="ph ph-check text-xs text-black"></i>
+                            </div>
+                            <p class="text-white/50 line-through">Call maintenance for AC</p>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-4 border border-white/10 flex gap-3 items-center">
+                            <div class="w-5 h-5 rounded-full border-2 border-white/30 flex-shrink-0"></div>
+                            <p class="text-white/90">Pick up groceries</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- App Icons Dock / Grid (Spans 4 cols) -->
+                <div class="glass rounded-[2rem] p-6 md:col-span-4 flex items-center justify-around overflow-hidden">
+                    <button class="flex flex-col items-center gap-2 group hover:-translate-y-2 transition-transform duration-300">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg border border-white/20">
+                            <i class="ph-fill ph-safari-logo text-3xl text-white"></i>
+                        </div>
+                        <span class="text-xs font-medium text-white/80">Browser</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group hover:-translate-y-2 transition-transform duration-300">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-green-500 to-emerald-400 flex items-center justify-center shadow-lg border border-white/20">
+                            <i class="ph-fill ph-phone-call text-3xl text-white"></i>
+                        </div>
+                        <span class="text-xs font-medium text-white/80">Webex</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group hover:-translate-y-2 transition-transform duration-300">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center shadow-lg border border-white/20">
+                            <i class="ph-fill ph-image text-3xl text-white"></i>
+                        </div>
+                        <span class="text-xs font-medium text-white/80">Gallery</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group hover:-translate-y-2 transition-transform duration-300">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-500 to-orange-400 flex items-center justify-center shadow-lg border border-white/20">
+                            <i class="ph-fill ph-youtube-logo text-3xl text-white"></i>
+                        </div>
+                        <span class="text-xs font-medium text-white/80">Videos</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group hover:-translate-y-2 transition-transform duration-300">
+                        <div class="w-16 h-16 rounded-2xl bg-gray-700 flex items-center justify-center shadow-lg border border-white/20">
+                            <i class="ph-fill ph-gear text-3xl text-white"></i>
+                        </div>
+                        <span class="text-xs font-medium text-white/80">Settings</span>
+                    </button>
+                </div>
+                
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Swipe Pagination Logic ---
+        const swipeContainer = document.getElementById('swipe-container');
+        const dots = [document.getElementById('dot-0'), document.getElementById('dot-1')];
+
+        swipeContainer.addEventListener('scroll', () => {
+            const scrollLeft = swipeContainer.scrollLeft;
+            const width = swipeContainer.clientWidth;
+            const currentPage = Math.round(scrollLeft / width);
+            
+            dots.forEach((dot, index) => {
+                if (index === currentPage) {
+                    dot.classList.remove('bg-white/30');
+                    dot.classList.add('bg-white');
+                } else {
+                    dot.classList.remove('bg-white');
+                    dot.classList.add('bg-white/30');
+                }
+            });
+        });
+
+        // --- Clock & Date Logic ---
+        function updateTime() {
+            const now = new Date();
+            
+            // Time formatting (e.g., 09:33 AM)
+            const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
+            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', timeOptions);
+            
+            // Date formatting (e.g., Sunday, October 18)
+            const dateOptions = { weekday: 'long', month: 'long', day: 'numeric' };
+            document.getElementById('date').innerText = now.toLocaleDateString('en-US', dateOptions);
+        }
+        
+        setInterval(updateTime, 1000);
+        updateTime(); // initial call
+
+        // --- Weather Logic (Open-Meteo for Mandaluyong) ---
+        // Mandaluyong Coordinates: 14.5794° N, 121.0359° E
+        const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=14.5794&longitude=121.0359&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia%2FManila';
+
+        // WMO Weather interpretation codes (https://open-meteo.com/en/docs)
+        const weatherCodes = {
+            0: { desc: 'Clear sky', icon: 'ph-sun' },
+            1: { desc: 'Mainly clear', icon: 'ph-sun-dim' },
+            2: { desc: 'Partly cloudy', icon: 'ph-cloud-sun' },
+            3: { desc: 'Overcast', icon: 'ph-cloud' },
+            45: { desc: 'Fog', icon: 'ph-cloud-fog' },
+            48: { desc: 'Depositing rime fog', icon: 'ph-cloud-fog' },
+            51: { desc: 'Drizzle: Light', icon: 'ph-cloud-drizzle' },
+            53: { desc: 'Drizzle: Moderate', icon: 'ph-cloud-drizzle' },
+            55: { desc: 'Drizzle: Dense', icon: 'ph-cloud-drizzle' },
+            61: { desc: 'Rain: Slight', icon: 'ph-cloud-rain' },
+            63: { desc: 'Rain: Moderate', icon: 'ph-cloud-rain' },
+            65: { desc: 'Rain: Heavy', icon: 'ph-cloud-rain' },
+            71: { desc: 'Snow: Slight', icon: 'ph-snowflake' },
+            73: { desc: 'Snow: Moderate', icon: 'ph-snowflake' },
+            75: { desc: 'Snow: Heavy', icon: 'ph-snowflake' },
+            80: { desc: 'Rain showers: Slight', icon: 'ph-cloud-rain' },
+            81: { desc: 'Rain showers: Moderate', icon: 'ph-cloud-rain' },
+            82: { desc: 'Rain showers: Violent', icon: 'ph-cloud-lightning' },
+            95: { desc: 'Thunderstorm', icon: 'ph-cloud-lightning' },
+            96: { desc: 'Thunderstorm with hail', icon: 'ph-cloud-lightning' },
+            99: { desc: 'Thunderstorm with heavy hail', icon: 'ph-cloud-lightning' }
+        };
+
+        async function fetchWeather() {
+            try {
+                const response = await fetch(weatherUrl);
+                const data = await response.json();
+                
+                if (data && data.current) {
+                    const temp = Math.round(data.current.temperature_2m);
+                    const code = data.current.weather_code;
+                    const humidity = data.current.relative_humidity_2m;
+                    const wind = Math.round(data.current.wind_speed_10m);
+                    
+                    const weatherInfo = weatherCodes[code] || { desc: 'Unknown', icon: 'ph-cloud' };
+                    
+                    document.getElementById('temperature').innerText = `${temp}°`;
+                    document.getElementById('weather-desc').innerText = weatherInfo.desc;
+                    document.getElementById('humidity').innerText = `${humidity}%`;
+                    document.getElementById('wind').innerText = `${wind} km/h`;
+                    
+                    // Update icon classes
+                    const iconEl = document.getElementById('weather-icon');
+                    iconEl.className = `ph ${weatherInfo.icon} text-5xl drop-shadow-md`;
+                }
+            } catch (error) {
+                console.error("Error fetching weather:", error);
+                document.getElementById('weather-desc').innerText = "Weather unavailable";
+            }
+        }
+
+        fetchWeather();
+        // Update weather every 30 minutes
+        setInterval(fetchWeather, 30 * 60 * 1000);
+
+        // --- Google Calendar Logic ---
+        const CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
+        const API_KEY = 'YOUR_API_KEY_HERE';
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
+        const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: [DISCOVERY_DOC],
+                });
+                gapiInited = true;
+                maybeEnableButtons();
+            } catch (error) {
+                console.error('Error initializing GAPI client', error);
+            }
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // defined later
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                document.getElementById('auth-button').classList.remove('invisible');
+            }
+        }
+
+        document.getElementById('auth-button').onclick = () => {
+            if (gapi.client.getToken() === null) {
+                // Prompt user to sign in
+                tokenClient.callback = async (resp) => {
+                    if (resp.error !== undefined) {
+                        throw (resp);
+                    }
+                    document.getElementById('auth-button').innerHTML = '<i class="ph ph-sign-out"></i> Sign Out';
+                    await listUpcomingEvents();
+                };
+
+                if (gapi.client.getToken() === null) {
+                    tokenClient.requestAccessToken({prompt: 'consent'});
+                } else {
+                    tokenClient.requestAccessToken({prompt: ''});
+                }
+            } else {
+                // Sign out
+                const token = gapi.client.getToken();
+                if (token !== null) {
+                    google.accounts.oauth2.revoke(token.access_token);
+                    gapi.client.setToken('');
+                    document.getElementById('events-container').innerHTML = `
+                        <div class="text-center text-white/60 text-sm mt-8 flex flex-col items-center gap-2">
+                            <i class="ph ph-calendar-x text-3xl mb-1"></i>
+                            <p>Sign in to view your calendar</p>
+                        </div>`;
+                    document.getElementById('auth-button').innerHTML = '<i class="ph ph-google-logo"></i> Sign In';
+                }
+            }
+        };
+
+        async function listUpcomingEvents() {
+            const container = document.getElementById('events-container');
+            container.innerHTML = '<div class="text-center text-white/80 text-sm mt-8"><i class="ph ph-spinner animate-spin text-2xl mb-2 inline-block"></i><p>Loading events...</p></div>';
+            
+            try {
+                const request = {
+                    'calendarId': 'primary',
+                    'timeMin': (new Date()).toISOString(),
+                    'showDeleted': false,
+                    'singleEvents': true,
+                    'maxResults': 4,
+                    'orderBy': 'startTime',
+                };
+                const response = await gapi.client.calendar.events.list(request);
+                
+                const events = response.result.items;
+                container.innerHTML = ''; 
+
+                if (!events || events.length === 0) {
+                    container.innerHTML = '<div class="text-center text-white/60 text-sm mt-8"><p>No upcoming events found.</p></div>';
+                    return;
+                }
+
+                events.forEach((event) => {
+                    let when = event.start.dateTime;
+                    let isAllDay = false;
+                    
+                    if (!when) {
+                        when = event.start.date;
+                        isAllDay = true;
+                    }
+                    
+                    const eventDate = new Date(when);
+                    const month = eventDate.toLocaleString('en-US', { month: 'short' });
+                    const dateNum = eventDate.getDate();
+                    
+                    const timeString = isAllDay ? 'All Day' : eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    
+                    const eventHtml = `
+                        <div class="flex gap-4 items-start">
+                            <div class="flex flex-col items-center min-w-[50px]">
+                                <span class="text-xs font-semibold text-red-300 uppercase">${month}</span>
+                                <span class="text-2xl font-bold">${dateNum}</span>
+                            </div>
+                            <div class="bg-white/5 rounded-xl p-3 flex-grow border border-white/10">
+                                <h4 class="font-medium text-sm truncate w-full max-w-[200px]" title="${event.summary}">${event.summary || 'Busy'}</h4>
+                                <p class="text-xs text-white/60 mt-1 flex items-center gap-1">
+                                    <i class="ph ph-clock"></i> ${timeString}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', eventHtml);
+                });
+            } catch (err) {
+                console.error("Error fetching events:", err);
+                container.innerHTML = '<div class="text-center text-red-300 text-sm mt-8"><p>Error fetching events.</p></div>';
+            }
+        }
+    </script>
+</body>
+</html>
