@@ -3,28 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desk Mini Smart Display</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Phosphor Icons for clean Apple-like icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Google API & Identity Services -->
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+    <title>Cisco Smart Display</title>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4facfe 100%);
-            background-size: 200% 200%;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
         }
 
         @keyframes gradientBG {
@@ -33,349 +26,206 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Glassmorphism utility */
-        .glass {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+            width: 90vw;
+            height: 90vh;
+            max-width: 1200px;
         }
 
-        /* Custom scrollbar for events list */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+
+        /* Clock & Weather */
+        .header-panel {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
+        .time-date h1 { margin: 0; font-size: 4rem; font-weight: 300; }
+        .time-date p { margin: 5px 0 0; font-size: 1.5rem; opacity: 0.8; }
+
+        .weather-info { text-align: right; }
+        .weather-info h2 { margin: 0; font-size: 3rem; font-weight: 400; }
+        .weather-info p { margin: 5px 0 0; font-size: 1.2rem; opacity: 0.8; }
+
+        /* Spotify Widget */
+        .spotify-widget {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .spotify-widget img {
+            width: 120px;
+            height: 120px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            display: none; /* Hidden until playing */
+        }
+        
+        .track-info h3 { margin: 0 0 10px; font-size: 1.8rem; }
+        .track-info p { margin: 0; font-size: 1.2rem; opacity: 0.7; }
+        
+        .spotify-btn {
+            background: #1DB954;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Calendar */
+        .calendar-widget h2 { margin-top: 0; font-size: 1.8rem; }
+        .event {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        .event h4 { margin: 0 0 5px; font-size: 1.2rem; }
+        .event p { margin: 0; opacity: 0.7; }
     </style>
 </head>
-<body class="box-border m-0 p-0 overflow-hidden text-white relative">
+<body>
 
-    <!-- Main Dashboard Container -->
-    <div class="w-screen h-screen flex items-center justify-center p-8">
-        <div class="w-full max-w-7xl h-full grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
-            
-            <!-- Top Left: Time & Date (Spans 2 columns) -->
-            <div class="glass rounded-[2rem] p-8 flex flex-col justify-center md:col-span-2">
-                <h1 id="clock" class="text-7xl md:text-8xl font-bold tracking-tighter drop-shadow-lg mb-2">--:-- --</h1>
-                <p id="date" class="text-2xl md:text-3xl text-white/80 font-medium tracking-wide">Loading date...</p>
+    <div class="dashboard">
+        <div class="glass-panel header-panel">
+            <div class="time-date">
+                <h1 id="clock">00:00</h1>
+                <p id="date">Loading date...</p>
             </div>
+            <div class="weather-info">
+                <h2 id="temp">--°C</h2>
+                <p>Mandaluyong City</p>
+            </div>
+        </div>
 
-            <!-- Top Right: Weather -->
-            <div class="glass rounded-[2rem] p-8 flex flex-col relative overflow-hidden">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="text-xl font-semibold tracking-wide">Mandaluyong</h3>
-                        <p class="text-sm text-white/60">Current Weather</p>
-                    </div>
-                    <i id="weather-icon" class="ph ph-cloud text-5xl drop-shadow-md"></i>
-                </div>
-                <div class="flex-grow flex flex-col justify-center">
-                    <h2 id="temperature" class="text-6xl font-bold mb-2">--°</h2>
-                    <p id="weather-desc" class="text-xl font-medium text-white/90 capitalize">Loading...</p>
-                </div>
-                <div class="w-full grid grid-cols-2 gap-4 mt-6 text-sm text-white/80 border-t border-white/20 pt-4">
-                    <div class="flex flex-col">
-                        <span class="text-xs text-white/50 mb-1">Humidity</span>
-                        <span id="humidity" class="font-medium">--%</span>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-xs text-white/50 mb-1">Wind</span>
-                        <span id="wind" class="font-medium">-- km/h</span>
-                    </div>
+        <div class="glass-panel">
+            <div class="spotify-widget" id="spotify-container">
+                <button id="spotify-login" class="spotify-btn">Log in to Spotify</button>
+                <img id="album-art" src="" alt="Album Art">
+                <div class="track-info" id="track-info" style="display: none;">
+                    <h3 id="track-name">Not Playing</h3>
+                    <p id="artist-name">Open Spotify on your devices</p>
                 </div>
             </div>
+        </div>
 
-            <!-- Bottom Left: Calendar/Events -->
-            <div class="glass rounded-[2rem] p-8 flex flex-col">
-                <div class="flex items-center justify-between mb-6 border-b border-white/20 pb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-300">
-                            <i class="ph ph-calendar-blank text-xl"></i>
-                        </div>
-                        <h3 class="text-xl font-semibold tracking-wide">Up Next</h3>
-                    </div>
-                    <button id="auth-button" class="text-xs bg-white/10 hover:bg-white/20 transition-colors px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1 invisible">
-                        <i class="ph ph-google-logo"></i> Sign In
-                    </button>
-                </div>
-                
-                <div id="events-container" class="flex-grow overflow-y-auto no-scrollbar flex flex-col gap-4">
-                    <div class="text-center text-white/60 text-sm mt-8 flex flex-col items-center gap-2">
-                        <i class="ph ph-calendar-x text-3xl mb-1"></i>
-                        <p>Sign in to view your calendar</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bottom Right: Music/Spotify Player (Spans 2 columns) -->
-            <div class="glass rounded-[2rem] p-6 flex flex-col justify-center md:col-span-2 relative overflow-hidden">
-                <!-- Blurred background art for depth -->
-                <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=800&auto=format&fit=crop')] bg-cover bg-center opacity-30 blur-2xl z-0 pointer-events-none"></div>
-                
-                <div class="relative z-10 flex items-center gap-8 h-full">
-                    <!-- Album Art -->
-                    <div class="w-40 h-40 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 border border-white/10 group cursor-pointer relative">
-                         <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400&auto=format&fit=crop" alt="Album Art" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
-                         <div class="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                             <i class="ph-fill ph-spotify-logo text-white text-4xl drop-shadow-md"></i>
-                         </div>
-                    </div>
-                    
-                    <!-- Track Info & Controls -->
-                    <div class="flex-grow flex flex-col justify-center">
-                        <div class="mb-4">
-                            <p class="text-xs font-medium uppercase tracking-widest text-white/60 mb-1 flex items-center gap-1">
-                                <i class="ph-fill ph-speaker-high"></i> Desk Mini Audio
-                            </p>
-                            <h3 class="text-3xl font-bold mb-1 truncate drop-shadow-md">Midnight City</h3>
-                            <p class="text-lg text-white/80 font-light truncate">M83 • Hurry Up, We're Dreaming</p>
-                        </div>
-                        
-                        <!-- Progress Bar -->
-                        <div class="w-full mb-4">
-                            <div class="w-full bg-white/20 rounded-full h-1.5 mb-2 cursor-pointer">
-                                <div class="bg-white rounded-full h-1.5 w-1/3 relative">
-                                    <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow"></div>
-                                </div>
-                            </div>
-                            <div class="flex justify-between text-xs text-white/60 font-medium">
-                                <span>1:24</span>
-                                <span>4:03</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Controls -->
-                        <div class="flex items-center gap-6 text-white/90">
-                            <button class="hover:text-white transition-colors"><i class="ph-fill ph-shuffle text-xl"></i></button>
-                            <button class="hover:text-white transition-colors"><i class="ph-fill ph-skip-back text-3xl"></i></button>
-                            <button class="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform shadow-lg">
-                                <i class="ph-fill ph-pause text-2xl"></i>
-                            </button>
-                            <button class="hover:text-white transition-colors"><i class="ph-fill ph-skip-forward text-3xl"></i></button>
-                            <button class="hover:text-white transition-colors"><i class="ph-fill ph-repeat text-xl"></i></button>
-                        </div>
-                    </div>
-                </div>
+        <div class="glass-panel calendar-widget">
+            <h2>Today's Schedule</h2>
+            <div class="event">
+                <h4>Sign in to Google</h4>
+                <p>Add your API keys to sync your calendar.</p>
             </div>
         </div>
     </div>
 
     <script>
-        // --- Clock & Date Logic ---
-        function updateTime() {
+        // --- Clock & Date ---
+        function updateClock() {
             const now = new Date();
-            
-            // Time formatting (e.g., 09:33 AM)
-            const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', timeOptions);
-            
-            // Date formatting (e.g., Sunday, October 18)
-            const dateOptions = { weekday: 'long', month: 'long', day: 'numeric' };
-            document.getElementById('date').innerText = now.toLocaleDateString('en-US', dateOptions);
+            document.getElementById('clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('date').innerText = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
         }
-        
-        setInterval(updateTime, 1000);
-        updateTime(); // initial call
+        setInterval(updateClock, 1000);
+        updateClock();
 
-        // --- Weather Logic (Open-Meteo for Mandaluyong) ---
-        // Mandaluyong Coordinates: 14.5794° N, 121.0359° E
-        const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=14.5794&longitude=121.0359&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia%2FManila';
-
-        // WMO Weather interpretation codes (https://open-meteo.com/en/docs)
-        const weatherCodes = {
-            0: { desc: 'Clear sky', icon: 'ph-sun' },
-            1: { desc: 'Mainly clear', icon: 'ph-sun-dim' },
-            2: { desc: 'Partly cloudy', icon: 'ph-cloud-sun' },
-            3: { desc: 'Overcast', icon: 'ph-cloud' },
-            45: { desc: 'Fog', icon: 'ph-cloud-fog' },
-            48: { desc: 'Depositing rime fog', icon: 'ph-cloud-fog' },
-            51: { desc: 'Drizzle: Light', icon: 'ph-cloud-drizzle' },
-            53: { desc: 'Drizzle: Moderate', icon: 'ph-cloud-drizzle' },
-            55: { desc: 'Drizzle: Dense', icon: 'ph-cloud-drizzle' },
-            61: { desc: 'Rain: Slight', icon: 'ph-cloud-rain' },
-            63: { desc: 'Rain: Moderate', icon: 'ph-cloud-rain' },
-            65: { desc: 'Rain: Heavy', icon: 'ph-cloud-rain' },
-            71: { desc: 'Snow: Slight', icon: 'ph-snowflake' },
-            73: { desc: 'Snow: Moderate', icon: 'ph-snowflake' },
-            75: { desc: 'Snow: Heavy', icon: 'ph-snowflake' },
-            80: { desc: 'Rain showers: Slight', icon: 'ph-cloud-rain' },
-            81: { desc: 'Rain showers: Moderate', icon: 'ph-cloud-rain' },
-            82: { desc: 'Rain showers: Violent', icon: 'ph-cloud-lightning' },
-            95: { desc: 'Thunderstorm', icon: 'ph-cloud-lightning' },
-            96: { desc: 'Thunderstorm with hail', icon: 'ph-cloud-lightning' },
-            99: { desc: 'Thunderstorm with heavy hail', icon: 'ph-cloud-lightning' }
-        };
-
+        // --- Weather (Mandaluyong City) ---
         async function fetchWeather() {
             try {
-                const response = await fetch(weatherUrl);
-                const data = await response.json();
-                
-                if (data && data.current) {
-                    const temp = Math.round(data.current.temperature_2m);
-                    const code = data.current.weather_code;
-                    const humidity = data.current.relative_humidity_2m;
-                    const wind = Math.round(data.current.wind_speed_10m);
-                    
-                    const weatherInfo = weatherCodes[code] || { desc: 'Unknown', icon: 'ph-cloud' };
-                    
-                    document.getElementById('temperature').innerText = `${temp}°`;
-                    document.getElementById('weather-desc').innerText = weatherInfo.desc;
-                    document.getElementById('humidity').innerText = `${humidity}%`;
-                    document.getElementById('wind').innerText = `${wind} km/h`;
-                    
-                    // Update icon classes
-                    const iconEl = document.getElementById('weather-icon');
-                    iconEl.className = `ph ${weatherInfo.icon} text-5xl drop-shadow-md`;
-                }
-            } catch (error) {
-                console.error("Error fetching weather:", error);
-                document.getElementById('weather-desc').innerText = "Weather unavailable";
+                const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=14.5794&longitude=121.0359&current_weather=true');
+                const data = await res.json();
+                document.getElementById('temp').innerText = `${Math.round(data.current_weather.temperature)}°C`;
+            } catch (e) {
+                console.log("Weather error", e);
             }
         }
-
         fetchWeather();
-        // Update weather every 30 minutes
-        setInterval(fetchWeather, 30 * 60 * 1000);
+        setInterval(fetchWeather, 1800000); // 30 mins
 
-        // --- Google Calendar Logic ---
-        const CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
-        const API_KEY = 'YOUR_API_KEY_HERE';
-        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
-        const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+        // --- Spotify Integration ---
+        const SPOTIFY_CLIENT_ID = '3d85d24c75614093b99395761dcb82b7';
+        // Dynamically get the current URL for the redirect
+        const SPOTIFY_REDIRECT_URI = window.location.origin + window.location.pathname; 
+        
+        const loginBtn = document.getElementById('spotify-login');
+        const trackInfo = document.getElementById('track-info');
+        const albumArt = document.getElementById('album-art');
+        const trackName = document.getElementById('track-name');
+        const artistName = document.getElementById('artist-name');
 
-        let tokenClient;
-        let gapiInited = false;
-        let gisInited = false;
-
-        function gapiLoaded() {
-            gapi.load('client', initializeGapiClient);
+        function authenticateSpotify() {
+            const scope = 'user-read-currently-playing user-read-playback-state';
+            const authUrl = `https://accounts.spotify.com/authorize?client_id=${SPOTIFY_CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(SPOTIFY_REDIRECT_URI)}&scope=${encodeURIComponent(scope)}`;
+            window.location.href = authUrl;
         }
 
-        async function initializeGapiClient() {
+        function getSpotifyToken() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const token = params.get('access_token');
+            if (token) {
+                // Clear hash for clean URL and store token
+                window.location.hash = '';
+                localStorage.setItem('spotify_token', token);
+                return token;
+            }
+            return localStorage.getItem('spotify_token');
+        }
+
+        async function fetchCurrentlyPlaying(token) {
             try {
-                await gapi.client.init({
-                    apiKey: API_KEY,
-                    discoveryDocs: [DISCOVERY_DOC],
+                const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
-                gapiInited = true;
-                maybeEnableButtons();
-            } catch (error) {
-                console.error('Error initializing GAPI client', error);
-            }
-        }
-
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: '', // defined later
-            });
-            gisInited = true;
-            maybeEnableButtons();
-        }
-
-        function maybeEnableButtons() {
-            if (gapiInited && gisInited) {
-                document.getElementById('auth-button').classList.remove('invisible');
-            }
-        }
-
-        document.getElementById('auth-button').onclick = () => {
-            if (gapi.client.getToken() === null) {
-                // Prompt user to sign in
-                tokenClient.callback = async (resp) => {
-                    if (resp.error !== undefined) {
-                        throw (resp);
-                    }
-                    document.getElementById('auth-button').innerHTML = '<i class="ph ph-sign-out"></i> Sign Out';
-                    await listUpcomingEvents();
-                };
-
-                if (gapi.client.getToken() === null) {
-                    tokenClient.requestAccessToken({prompt: 'consent'});
-                } else {
-                    tokenClient.requestAccessToken({prompt: ''});
-                }
-            } else {
-                // Sign out
-                const token = gapi.client.getToken();
-                if (token !== null) {
-                    google.accounts.oauth2.revoke(token.access_token);
-                    gapi.client.setToken('');
-                    document.getElementById('events-container').innerHTML = `
-                        <div class="text-center text-white/60 text-sm mt-8 flex flex-col items-center gap-2">
-                            <i class="ph ph-calendar-x text-3xl mb-1"></i>
-                            <p>Sign in to view your calendar</p>
-                        </div>`;
-                    document.getElementById('auth-button').innerHTML = '<i class="ph ph-google-logo"></i> Sign In';
-                }
-            }
-        };
-
-        async function listUpcomingEvents() {
-            const container = document.getElementById('events-container');
-            container.innerHTML = '<div class="text-center text-white/80 text-sm mt-8"><i class="ph ph-spinner animate-spin text-2xl mb-2 inline-block"></i><p>Loading events...</p></div>';
-            
-            try {
-                const request = {
-                    'calendarId': 'primary',
-                    'timeMin': (new Date()).toISOString(),
-                    'showDeleted': false,
-                    'singleEvents': true,
-                    'maxResults': 4,
-                    'orderBy': 'startTime',
-                };
-                const response = await gapi.client.calendar.events.list(request);
                 
-                const events = response.result.items;
-                container.innerHTML = ''; 
-
-                if (!events || events.length === 0) {
-                    container.innerHTML = '<div class="text-center text-white/60 text-sm mt-8"><p>No upcoming events found.</p></div>';
+                if (res.status === 204 || res.status > 400) {
+                    trackName.innerText = "Not Playing";
+                    artistName.innerText = "Play music to see it here";
                     return;
                 }
-
-                events.forEach((event) => {
-                    let when = event.start.dateTime;
-                    let isAllDay = false;
-                    
-                    if (!when) {
-                        when = event.start.date;
-                        isAllDay = true;
-                    }
-                    
-                    const eventDate = new Date(when);
-                    const month = eventDate.toLocaleString('en-US', { month: 'short' });
-                    const dateNum = eventDate.getDate();
-                    
-                    const timeString = isAllDay ? 'All Day' : eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                    
-                    const eventHtml = `
-                        <div class="flex gap-4 items-start">
-                            <div class="flex flex-col items-center min-w-[50px]">
-                                <span class="text-xs font-semibold text-red-300 uppercase">${month}</span>
-                                <span class="text-2xl font-bold">${dateNum}</span>
-                            </div>
-                            <div class="bg-white/5 rounded-xl p-3 flex-grow border border-white/10">
-                                <h4 class="font-medium text-sm truncate w-full max-w-[200px]" title="${event.summary}">${event.summary || 'Busy'}</h4>
-                                <p class="text-xs text-white/60 mt-1 flex items-center gap-1">
-                                    <i class="ph ph-clock"></i> ${timeString}
-                                </p>
-                            </div>
-                        </div>
-                    `;
-                    container.insertAdjacentHTML('beforeend', eventHtml);
-                });
-            } catch (err) {
-                console.error("Error fetching events:", err);
-                container.innerHTML = '<div class="text-center text-red-300 text-sm mt-8"><p>Error fetching events.</p></div>';
+                
+                const data = await res.json();
+                if (data.item) {
+                    trackName.innerText = data.item.name;
+                    artistName.innerText = data.item.artists.map(a => a.name).join(', ');
+                    albumArt.src = data.item.album.images[0].url;
+                    albumArt.style.display = 'block';
+                }
+            } catch (e) {
+                console.error(e);
             }
         }
+
+        const token = getSpotifyToken();
+        if (token) {
+            loginBtn.style.display = 'none';
+            trackInfo.style.display = 'block';
+            fetchCurrentlyPlaying(token);
+            setInterval(() => fetchCurrentlyPlaying(token), 5000); // Check every 5 seconds
+        }
+
+        loginBtn.addEventListener('click', authenticateSpotify);
     </script>
 </body>
 </html>
